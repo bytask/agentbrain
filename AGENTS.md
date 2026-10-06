@@ -3,7 +3,9 @@
 仕事の文脈を AI に渡すためのフォルダ「agentbrain」の雛形と、それを作る・点検する手順を配る repo。配り方は 2 つあり、中身は同じ。
 
 - **プラグイン**（`dist/agentbrain.plugin`）: スキルとして入れる
-- **リモート MCP**（Worker `agentbrain-mcp`、`https://mcp.taskf.co.jp/agentbrain/<secret>`）: コネクタとして足す
+- **リモート MCP**（Worker `agentbrain-mcp`、`https://agentbrain.taskf.co.jp/mcp`、認証なし）: コネクタとして足す
+
+紹介ページ `https://agentbrain.taskf.co.jp` も同じ Worker が出す（`worker/public/index.html`）。
 
 ## 構成
 
@@ -15,6 +17,7 @@
 | `.claude-plugin/plugin.json` | プラグインの定義。配布のたびに `version` を上げる |
 | `.claude-plugin/marketplace.json` | Claude Code から配布元として登録するための定義 |
 | `worker/` | MCP サーバー（Cloudflare Worker、依存なし・ステートレス）。`src/content.gen.ts` は生成物 |
+| `worker/public/index.html` | 紹介ページ（1 ファイル、ビルドなし）。フォルダの中身は `/api/template` から読むので、雛形を直せばページにも出る |
 | `scripts/build.py` | 正本から生成物と `dist/agentbrain.plugin` を作る |
 
 ## 規約
@@ -30,6 +33,8 @@
 - 生成されたフォルダは、プラグインや MCP が無くても動くように保つ（育て方は雛形の `CLAUDE.md` に書く）
 - 雛形と手順の文章は日本語。プラグインの構成要素（フォルダ名・スキル名）と MCP のツール名は英小文字
 - MCP サーバーはファイルを書かない。書くのはクライアント側なので、手順は「返した中身をそのまま書き出す」前提で書く
+- `/mcp` は認証なしで公開している。返してよいのは、公開している手順と雛形だけ。利用者の入力を受け取るツールや、社内の情報を返すツールを足さない
+- 紹介ページの文言は、手順や雛形の実際の動きと合わせる（頼み方の言葉、ファイル数、受け取らないもの）。変えたら両方を直す
 
 ## 確かめ方
 
@@ -52,4 +57,4 @@ claude -p --strict-mcp-config --mcp-config <MCP の URL を書いた json> --per
 - **git 方針**: `pr` — `tskf/<項目 id>` ブランチ → PR → CI が緑なら自分で squash merge（`gh pr checks <PR> --watch --fail-fast && gh pr merge <PR> --squash --delete-branch`）
 - **デプロイ**: main への merge で GitHub Actions `Deploy` が `worker/` を出す。手で出す予備は `cd worker && npm run deploy`。プラグイン（`dist/`）は commit せず、配るときに `build.py` で作る
 - **本番デプロイは事前承認済み**（承認ゲートで止めるのは 外部送信・削除・課金・アプリの外部配信 だけ）
-- 公開 URL と秘密はゲートウェイ（`code/mcp-gateway` の `GATEWAY_CONFIG`）が持つ。Worker 側の `MCP_PATH_SECRET` はゲートウェイからの内部認証で、控えは `worker/.mcp-path-secret`（gitignore）
+- 公開面は独自ホスト `agentbrain.taskf.co.jp`（`wrangler.jsonc` の `routes`）。`mcp.taskf.co.jp/agentbrain/<secret>`（ゲートウェイ経由、`MCP_PATH_SECRET` で内部認証）は、公開前に配った URL のために残している
