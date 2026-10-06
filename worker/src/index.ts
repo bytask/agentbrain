@@ -1,8 +1,12 @@
 /**
  * agentbrain-mcp — agentbrain（仕事の文脈を AI に渡すフォルダ）の作り方・点検の手順と雛形を
- * MCP で配る Cloudflare Worker。プラグインを入れられない環境でも、コネクタを足せば同じ手順が届く。
+ * MCP で配る Cloudflare Worker。紹介ページ（public/index.html）も同じ Worker から出す。
  *
- *   公開: mcp-gateway 経由 https://mcp.taskf.co.jp/agentbrain/<secret> → /mcp-<MCP_PATH_SECRET>
+ *   公開: https://agentbrain.taskf.co.jp
+ *     /              紹介ページ（静的アセット）
+ *     /mcp           MCP（認証なし。返すのは公開している手順と雛形だけで、利用者のデータは受け取らない）
+ *     /api/template  紹介ページが読む雛形の一覧（JSON）
+ *   旧経路: mcp-gateway 経由 https://mcp.taskf.co.jp/agentbrain/<secret> → /mcp-<MCP_PATH_SECRET>（配布済みの URL 用）
  *   ツール: agentbrain_guide / agentbrain_template
  *   プロンプト: agentbrain-setup / agentbrain-check、リソース: agentbrain://template/<path>
  *   ステートレス（Durable Object なし、GET の SSE は 405）。ファイルは書かない（書くのはクライアント側）
@@ -24,7 +28,7 @@ const TOPICS = Object.keys(GUIDES) as Topic[];
 
 const INSTRUCTIONS = [
   "agentbrain（ある人の仕事を AI が進めるための文脈を置くフォルダ）を作る・続ける・点検するための手順と雛形を配るサーバー。",
-  "「agentbrain を作って」「agentbrain の続き」「業務を追加して」と言われたら agentbrain_guide(topic=setup) を、「agentbrain を点検して」と言われたら agentbrain_guide(topic=check) を呼び、返ってきた手順に従う。",
+  "「agentbrain を作って」「agentbrain の続き」「業務を追加して」と言われたら agentbrain_guide(topic=setup) を、「agentbrain を点検して」「受け皿を片付けて」と言われたら agentbrain_guide(topic=check) を呼び、返ってきた手順に従う。",
   "雛形のファイルは agentbrain_template が返す。",
   "このサーバーはファイルを読み書きしない。フォルダへの書き込みは、手元のファイル操作で行う。",
 ].join("\n");
@@ -174,7 +178,13 @@ async function serveMcp(request: Request): Promise<Response> {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const { pathname } = new URL(request.url);
-    if (pathname === "/" || pathname === "/health") return new Response("agentbrain-mcp ok\n", { headers: { "content-type": "text/plain" } });
+    if (pathname === "/mcp" || pathname === "/mcp/") return serveMcp(request);
+    if (pathname === "/api/template") {
+      return new Response(JSON.stringify({ version: VERSION, files: TEMPLATE }), {
+        headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=300" },
+      });
+    }
+    if (pathname === "/health") return new Response("agentbrain-mcp ok\n", { headers: { "content-type": "text/plain" } });
     if (env.MCP_PATH_SECRET) {
       const base = `/mcp-${env.MCP_PATH_SECRET}`;
       if (pathname === base || pathname === `${base}/`) return serveMcp(request);

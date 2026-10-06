@@ -4,8 +4,11 @@
   "account_id": "cf2700fea05294e9282d2323a28c0322",
   "main": "src/index.ts",
   "compatibility_date": "2026-08-01",
-  // 公開面は mcp-gateway（mcp.taskf.co.jp/agentbrain/<secret>）のみ
+  // 公開面は agentbrain.taskf.co.jp（紹介ページと /mcp）。配布済みの旧 URL は mcp-gateway（mcp.taskf.co.jp/agentbrain/<secret>）経由
   "workers_dev": false,
+  "routes": [{ "pattern": "agentbrain.taskf.co.jp", "custom_domain": true }],
+  // 紹介ページ。ファイルに当たらないパス（/mcp など）は Worker に渡る
+  "assets": { "directory": "./public" },
   // 以下は Secret として設定する（wrangler.jsonc には書かない）
   //   npx wrangler secret put MCP_PATH_SECRET
   "observability": { "enabled": true }

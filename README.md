@@ -2,6 +2,8 @@
 
 仕事の文脈を AI に渡すためのフォルダ「agentbrain」を作り、育てるための手順と雛形。プラグインとしても、コネクタ（リモート MCP）としても入れられる。
 
+紹介ページ: https://agentbrain.taskf.co.jp
+
 AI に仕事を頼むたびに背景を説明し直すのをやめ、自分の役割・業務のやり方・今の状況・過去の決定を 1 つのフォルダに貯めていく。AI はそのフォルダを読んで動く。
 
 ## できること
@@ -47,11 +49,10 @@ AI に仕事を頼むたびに背景を説明し直すのをやめ、自分の�
 
 プラグインを入れられない環境や、スキルを増やしたくないときに使う。中身はプラグインと同じ。
 
-1. 配られた URL（`https://mcp.taskf.co.jp/agentbrain/…`）を受け取る
-2. 設定 → コネクタ → カスタムコネクタを追加し、URL を貼る
-3. agentbrain を置きたいフォルダを作業フォルダに選び、「agentbrain を作って」と頼む
+1. 設定 → コネクタ → カスタムコネクタを追加し、URL に `https://agentbrain.taskf.co.jp/mcp` を貼る（認証なし）
+2. agentbrain を置きたいフォルダを作業フォルダに選び、「agentbrain を作って」と頼む
 
-Claude Code では `claude mcp add --transport http agentbrain <URL>`。
+Claude Code では `claude mcp add --transport http agentbrain https://agentbrain.taskf.co.jp/mcp`。
 
 コネクタは手順と雛形を返すだけで、ファイルは書かない。フォルダへの書き込みは手元の Claude が行うので、フォルダを選べる環境（デスクトップアプリの Cowork、Claude Code）で使う。
 

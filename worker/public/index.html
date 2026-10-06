@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>agentbrain — AI に、仕事を引き継ぐフォルダ</title>
+<meta name="description" content="役割、業務のやり方、今の状況、過去の決定を 1 つのフォルダに貯めて、AI に渡す。Claude にコネクタを足すと、フォルダの作成からインタビューまで Claude が進めます。">
+<meta property="og:title" content="agentbrain — AI に、仕事を引き継ぐフォルダ">
+<meta property="og:description" content="AI に頼むたびに説明し直していることを、1 つのフォルダに貯める。雛形と手順を Claude のコネクタで配っています。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://agentbrain.taskf.co.jp/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M3 9a3 3 0 0 1 3-3h7l3 4h10a3 3 0 0 1 3 3v11a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z' fill='%232f5da8'/%3E%3Crect x='19' y='4' width='8' height='7' rx='1.5' fill='%23ffc53d'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1+Code:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --desk: #dce4ea;
+  --paper: #fbfcfd;
+  --ink: #18233a;
+  --ink-soft: #4a5872;
+  --file: #2f5da8;
+  --file-deep: #244a88;
+  --file-pale: #88a6d6;
+  --tab: #ffc53d;
+  --marker: #ffe28a;
+  --rule: #b9c6d2;
+  --sans: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --mono: "M PLUS 1 Code", "SFMono-Regular", Menlo, monospace;
+  --wrap: 1080px;
+  --gutter: clamp(16px, 4vw, 40px);
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  line-break: strict;
+  word-break: auto-phrase;
+  background: var(--desk);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 1.0625rem;
+  line-height: 1.85;
+}
+h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; }
+ol, ul { padding: 0; list-style: none; }
+a { color: var(--file-deep); text-underline-offset: 0.2em; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+code, .mono { font-family: var(--mono); font-size: 0.92em; }
+
+.wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 var(--gutter); }
+
+/* ---------- 先頭 ---------- */
+.top { display: flex; align-items: center; justify-content: space-between; padding-block: 22px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 1.15rem; letter-spacing: 0.01em; text-decoration: none; color: var(--ink); }
+.brand svg { width: 26px; height: 26px; }
+.top a.jump { font-weight: 700; font-size: 0.95rem; }
+
+.hero { padding-block: clamp(28px, 6vw, 72px) clamp(36px, 6vw, 64px); }
+.hero h1 {
+  font-size: clamp(2.3rem, 7.2vw, 5rem);
+  font-weight: 900;
+  line-height: 1.14;
+  letter-spacing: -0.02em;
+  font-feature-settings: "palt";
+}
+.hero h1 span { display: inline-block; }
+.hero .lead { margin-top: clamp(18px, 3vw, 28px); max-width: 34em; font-size: clamp(1.02rem, 1.6vw, 1.2rem); color: var(--ink-soft); font-weight: 500; }
+
+/* ---------- 書庫（フォルダの中身） ---------- */
+.cabinet { margin-top: clamp(8px, 2vw, 20px); }
+.tabs { display: flex; gap: 4px; padding: 0 14px; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button {
+  flex: none;
+  display: flex; align-items: baseline; gap: 7px;
+  border: 0; cursor: pointer;
+  padding: 9px 16px 11px;
+  border-radius: 9px 9px 0 0;
+  background: var(--file-pale);
+  color: #fff;
+  font-weight: 700; font-size: 0.98rem;
+  transform: translateY(6px);
+  transition: transform 140ms ease, background 140ms ease;
+}
+.tabs button .num { font-family: var(--mono); font-weight: 600; font-size: 0.82rem; opacity: 0.85; }
+.tabs button:hover { transform: translateY(3px); }
+.tabs button[aria-selected="true"] { background: var(--tab); color: var(--ink); transform: translateY(0); }
+.drawer {
+  position: relative;
+  background: var(--file);
+  border-radius: 14px;
+  padding: clamp(16px, 2.6vw, 28px);
+  display: grid;
+  grid-template-columns: minmax(200px, 270px) 1fr;
+  gap: clamp(16px, 2.6vw, 28px);
+  box-shadow: 0 18px 0 -8px var(--file-deep), 0 30px 40px -24px rgba(24, 35, 58, 0.55);
+}
+.shelf { color: #fff; min-width: 0; }
+.shelf .about { font-size: 0.95rem; line-height: 1.75; font-weight: 500; }
+.shelf ul { margin-top: 16px; display: grid; gap: 4px; }
+.shelf li button {
+  width: 100%; text-align: left; cursor: pointer;
+  border: 0; border-radius: 6px;
+  padding: 7px 10px;
+  background: transparent; color: #fff;
+  font-family: var(--mono); font-size: 0.86rem; line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.shelf li button:hover { background: rgba(255, 255, 255, 0.14); }
+.shelf li button[aria-current="true"] { background: var(--paper); color: var(--ink); font-weight: 600; }
+.shelf .empty { margin-top: 16px; font-size: 0.88rem; opacity: 0.85; }
+.sheet {
+  min-width: 0;
+  background: var(--paper);
+  border-radius: 4px;
+  padding: clamp(18px, 3vw, 34px) clamp(16px, 3vw, 36px) clamp(22px, 3vw, 38px) clamp(34px, 5vw, 62px);
+  background-image: linear-gradient(90deg, transparent 0, transparent calc(clamp(34px, 5vw, 62px) - 15px), #f1b9b9 calc(clamp(34px, 5vw, 62px) - 15px), #f1b9b9 calc(clamp(34px, 5vw, 62px) - 14px), transparent calc(clamp(34px, 5vw, 62px) - 14px));
+  min-height: 420px;
+  max-height: 560px;
+  overflow: auto;
+}
+.sheet .path { font-family: var(--mono); font-size: 0.8rem; color: var(--ink-soft); margin-bottom: 14px; overflow-wrap: anywhere; }
+.sheet .line { word-break: normal; font-family: var(--mono); font-size: 0.9rem; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; min-height: 1.8em; }
+.sheet .line.h { font-family: var(--sans); font-weight: 900; font-size: 1.05rem; margin-top: 0.5em; }
+.sheet .line.h1 { font-size: 1.35rem; margin-top: 0; }
+.sheet .line.q { font-family: var(--sans); font-weight: 500; font-size: 0.96rem; background: linear-gradient(transparent 12%, var(--marker) 12%, var(--marker) 88%, transparent 88%); padding: 0 4px; margin: 0 -4px; display: inline; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.sheet .line.blank { color: #9aa7b7; }
+.sheet .note { font-size: 0.95rem; color: var(--ink-soft); }
+.legend { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 8px 26px; font-size: 0.9rem; color: var(--ink-soft); font-weight: 500; }
+.legend span::before { content: ""; display: inline-block; width: 1.5em; height: 0.8em; margin-right: 8px; vertical-align: -0.02em; border-radius: 2px; }
+.legend .k-q::before { background: var(--marker); }
+.legend .k-b::before { background: transparent; border: 1.5px dashed #9aa7b7; }
+
+/* ---------- 本文 ---------- */
+section.block { padding-top: clamp(56px, 9vw, 112px); }
+.block h2 { font-size: clamp(1.6rem, 3.6vw, 2.5rem); font-weight: 900; line-height: 1.3; letter-spacing: -0.01em; font-feature-settings: "palt"; max-width: 18em; }
+.block .intro { margin-top: 14px; max-width: 36em; color: var(--ink-soft); font-weight: 500; }
+
+.steps { margin-top: clamp(26px, 4vw, 44px); display: grid; gap: 0; counter-reset: step; border-top: 2px solid var(--ink); }
+.steps > li { counter-increment: step; display: grid; grid-template-columns: clamp(52px, 8vw, 96px) 1fr; gap: clamp(8px, 2vw, 24px); padding: clamp(20px, 3vw, 32px) 0; border-bottom: 1px solid var(--rule); }
+.steps > li::before { content: counter(step); font-weight: 900; font-size: clamp(2.2rem, 5vw, 3.6rem); line-height: 1; color: var(--file); font-feature-settings: "tnum"; }
+.steps h3 { font-size: clamp(1.15rem, 2vw, 1.4rem); font-weight: 900; line-height: 1.45; }
+.steps p { margin-top: 8px; max-width: 36em; }
+.steps .sub { margin-top: 10px; font-size: 0.93rem; color: var(--ink-soft); }
+
+.urlbox { margin-top: 16px; display: flex; flex-wrap: wrap; align-items: stretch; max-width: 640px; border: 2px solid var(--ink); border-radius: 10px; background: var(--paper); overflow: hidden; }
+.urlbox code { flex: 1 1 260px; padding: 13px 16px; font-size: 0.98rem; font-weight: 600; overflow-wrap: anywhere; align-self: center; }
+.urlbox button { flex: 0 0 auto; border: 0; cursor: pointer; padding: 13px 22px; background: var(--ink); color: #fff; font-weight: 700; min-width: 9.5em; }
+.urlbox button:hover { background: var(--file-deep); }
+.urlbox button.done { background: var(--tab); color: var(--ink); }
+.say { display: inline-block; margin-top: 12px; padding: 9px 18px 9px 16px; background: var(--ink); color: #fff; border-radius: 18px 18px 18px 4px; font-weight: 700; }
+
+.phrases { margin-top: clamp(24px, 4vw, 40px); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(22px, 3vw, 34px) clamp(24px, 4vw, 48px); max-width: 820px; }
+.phrases dt { display: inline-block; padding: 9px 18px 9px 16px; background: var(--ink); color: #fff; border-radius: 18px 18px 18px 4px; font-weight: 700; }
+.phrases dd { margin-top: 10px; font-size: 0.98rem; }
+
+.split { margin-top: clamp(24px, 4vw, 40px); display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: clamp(20px, 3vw, 32px); }
+.split > div { background: var(--paper); border-radius: 4px; padding: clamp(20px, 3vw, 30px); border-top: 6px solid var(--file); }
+.split > div.never { border-top-color: var(--tab); }
+.split h3 { font-size: 1.12rem; font-weight: 900; }
+.split ul { margin-top: 12px; display: grid; gap: 10px; }
+.split li { padding-left: 1.2em; position: relative; font-size: 0.98rem; }
+.split li::before { content: ""; position: absolute; left: 0; top: 0.78em; width: 0.5em; height: 2px; background: var(--ink); }
+
+.faq { margin-top: clamp(22px, 4vw, 36px); border-top: 2px solid var(--ink); max-width: 820px; }
+.faq details { border-bottom: 1px solid var(--rule); }
+.faq summary { cursor: pointer; list-style: none; padding: 18px 40px 18px 0; font-weight: 700; position: relative; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-weight: 400; font-size: 1.5rem; line-height: 1; }
+.faq details[open] summary::after { content: "−"; }
+.faq details p { padding: 0 0 20px; max-width: 38em; color: var(--ink-soft); }
+
+footer { margin-top: clamp(64px, 10vw, 128px); background: var(--ink); color: #c9d3e0; padding: 34px 0 40px; font-size: 0.9rem; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 28px; justify-content: space-between; }
+footer a { color: #fff; }
+
+@media (max-width: 760px) {
+  .phrases { grid-template-columns: 1fr; }
+  .drawer { grid-template-columns: 1fr; }
+  .shelf ul { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .sheet { min-height: 320px; max-height: 460px; }
+  .urlbox button { flex: 1 1 100%; }
+  .urlbox code { font-size: 0.84rem; padding-inline: 12px; }
+  .tabs { padding: 0 8px; -webkit-mask-image: linear-gradient(90deg, #000 86%, transparent); mask-image: linear-gradient(90deg, #000 86%, transparent); }
+  .tabs button { padding: 8px 11px 10px; font-size: 0.9rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tabs button { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="wrap top">
+  <a class="brand" href="/" aria-label="agentbrain">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 9a3 3 0 0 1 3-3h7l3 4h10a3 3 0 0 1 3 3v11a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z" fill="#2f5da8"/><rect x="19" y="4" width="8" height="7" rx="1.5" fill="#ffc53d"/></svg>
+    agentbrain
+  </a>
+  <a class="jump" href="#start">はじめ方へ</a>
+</header>
+
+<main>
+  <div class="wrap hero">
+    <h1><span>AI に、</span><span>仕事を引き継ぐ</span><span>フォルダ。</span></h1>
+    <p class="lead">役割、業務のやり方、今の状況、過去の決定。AI に頼むたびに説明し直していることを、1 つのフォルダに貯めます。Claude にコネクタを足すと、フォルダの作成からインタビューまで Claude が進めます。</p>
+  </div>
+
+  <div class="wrap">
+    <div class="cabinet" id="folder">
+      <div class="tabs" role="tablist" aria-label="agentbrain のフォルダ"></div>
+      <div class="drawer">
+        <div class="shelf" role="tabpanel">
+          <p class="about"></p>
+          <ul></ul>
+        </div>
+        <div class="sheet" aria-live="polite">
+          <p class="note">フォルダの中身を読み込んでいます。</p>
+        </div>
+      </div>
+    </div>
+    <p class="legend"><span class="k-q">Claude があなたに聞く質問</span><span class="k-b">答えるまで「（未記入）」のまま。推測では埋めません</span></p>
+  </div>
+
+  <section class="block wrap" id="start">
+    <h2>はじめ方</h2>
+    <p class="intro">用意するのは、フォルダを選べる Claude（デスクトップアプリの Cowork か Claude Code）だけです。</p>
+    <ol class="steps">
+      <li>
+        <div>
+          <h3>Claude にコネクタを足す</h3>
+          <p>設定のコネクタから「カスタムコネクタを追加」を開き、名前に <code>agentbrain</code>、URL に次を貼ります。</p>
+          <div class="urlbox">
+            <code id="mcp-url">https://agentbrain.taskf.co.jp/mcp</code>
+            <button type="button" id="copy-url" data-idle="URL をコピー" data-done="コピーしました">URL をコピー</button>
+          </div>
+          <p class="sub">Claude Code では <code>claude mcp add --transport http agentbrain https://agentbrain.taskf.co.jp/mcp</code></p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>置き場所を選んで、頼む</h3>
+          <p>agentbrain を置きたいフォルダを Claude の作業フォルダに選び、こう頼みます。名前を答えると、上のフォルダ一式がそこに置かれます。</p>
+          <span class="say">agentbrain を作って</span>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>質問に答える</h3>
+          <p>Claude がプロフィール、担当業務、今週の状況を順に聞きます。答えるたびにファイルへ書き込まれるので、途中でやめても残ります。最初の 1 回は 10〜15 分です。</p>
+          <p class="sub">分からない質問は飛ばせます。手元に資料があれば、答える代わりに「取り込み」フォルダへ入れても構いません。</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>業務を 1 つ、任せてみる</h3>
+          <p>頻度が高く、やり方が決まっている業務を 1 つ選んで手順を話します。Claude が整理して書いたら、その場で実際に 1 回頼みます。直したところは記録され、次の仕事に生かされます。</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section class="block wrap">
+    <h2>作ったあとは、4 つの頼み方で足ります</h2>
+    <dl class="phrases">
+      <div><dt>agentbrain の続き</dt><dd>未記入のところから、インタビューを再開します。</dd></div>
+      <div><dt>業務を追加して</dt><dd>業務を 1 つ選び、概要と手順を聞き取って書きます。</dd></div>
+      <div><dt>受け皿を片付けて</dt><dd>放り込んだメモと資料を、どの箱へ移すか提案してから移します。</dd></div>
+      <div><dt>agentbrain を点検して</dt><dd>古い記述、食い違い、繰り返し直されていることを探し、直す案を出します。月に 1 回が目安です。</dd></div>
+    </dl>
+  </section>
+
+  <section class="block wrap">
+    <h2>コネクタがすること、しないこと</h2>
+    <p class="intro">コネクタは手順書と雛形を Claude に渡すだけです。フォルダを読み書きするのは、あなたの手元の Claude です。</p>
+    <div class="split">
+      <div>
+        <h3>Claude に返すもの</h3>
+        <ul>
+          <li>フォルダを作り、インタビューで埋める手順</li>
+          <li>点検の手順</li>
+          <li>雛形のファイル 16 点（上で見られるものと同じ）</li>
+        </ul>
+      </div>
+      <div class="never">
+        <h3>受け取らないもの</h3>
+        <ul>
+          <li>インタビューへの回答</li>
+          <li>フォルダに書かれた内容</li>
+          <li>名前、メールアドレスなどの登録情報（登録そのものがありません）</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2>よくある質問</h2>
+    <div class="faq">
+      <details>
+        <summary>どの Claude で使えますか</summary>
+        <p>作業フォルダを選べる環境で使えます。Claude デスクトップアプリの Cowork と、Claude Code です。フォルダを選べない通常のチャットでは、Claude がファイルを書けないため使えません。</p>
+      </details>
+      <details>
+        <summary>費用はかかりますか</summary>
+        <p>コネクタと雛形は無料です。Claude 自体の利用プランは別に必要です。</p>
+      </details>
+      <details>
+        <summary>全部の項目を埋めないと使えませんか</summary>
+        <p>いいえ。プロフィールと業務を 1 つ書けば使い始められます。残りは、仕事で使ううちに足りないところが分かるので、そこから足していきます。</p>
+      </details>
+      <details>
+        <summary>すでにあるマニュアルや議事録は使えますか</summary>
+        <p>使えます。「取り込み」フォルダに入れると、Claude が読み取った内容を「こう書いてよいですか」と確かめてから、該当する箱に書きます。原本は書き換えません。</p>
+      </details>
+      <details>
+        <summary>コネクタを外したら、フォルダは使えなくなりますか</summary>
+        <p>使えます。フォルダの先頭にある CLAUDE.md に、読む順番と育て方が書いてあるので、コネクタが無くても Claude はそのフォルダをもとに動きます。コネクタが要るのは、作るときと点検するときだけです。</p>
+      </details>
+      <details>
+        <summary>パスワードを書いても大丈夫ですか</summary>
+        <p>書かないでください。パスワードや認証コードはフォルダのどこにも書かない決まりにしてあり、聞かれて答えても Claude は書き込みません。</p>
+      </details>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>agentbrain は <a href="https://taskf.co.jp/">taskforce株式会社</a> が配っています。</span>
+    <span>© 2026 taskforce Inc.</span>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const BOXES = [
+    { dir: "", num: "", label: "地図", about: "どこに何があるか、AI にどう動いてほしいか。Claude が最初に読む 1 枚です。" },
+    { dir: "00-受け皿", num: "00", label: "受け皿", about: "思いつきや資料の原本を、整理せずに放り込む場所。振り分けは Claude に任せます。", empty: "資料を入れる「取り込み」フォルダは、最初は空です。" },
+    { dir: "10-自分", num: "10", label: "自分", about: "役割、判断基準、文体。あなたについての本当のことを置きます。" },
+    { dir: "20-業務", num: "20", label: "業務", about: "担当業務の一覧と、業務ごとの概要・手順。「_ひな形」を業務の数だけ写して使います。" },
+    { dir: "30-進行中", num: "30", label: "進行中", about: "今週の優先事項と、動いている案件。状況が変わるたびに書き換わります。" },
+    { dir: "40-記録", num: "40", label: "記録", about: "決めたこと、Claude の出力を直したこと、会議。追記だけで、過去は書き換えません。" },
+    { dir: "50-知識", num: "50", label: "知識", about: "社内だけで通じる言葉と、人と組織。" },
+    { dir: "90-成果物", num: "90", label: "成果物", about: "Claude が作ったものの置き場です。", empty: "最初は空で、頼んだ仕事の結果が日付つきで入っていきます。" },
+  ];
+  const START = { box: 2, file: "10-自分/プロフィール.md" };
+
+  const tabs = document.querySelector(".tabs");
+  const about = document.querySelector(".shelf .about");
+  const list = document.querySelector(".shelf ul");
+  const shelf = document.querySelector(".shelf");
+  const sheet = document.querySelector(".sheet");
+  let files = [];
+
+  const el = (tag, cls, text) => {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  };
+  const inBox = (box) => files.filter((f) => (box.dir ? f.path.startsWith(box.dir + "/") : !f.path.includes("/")));
+
+  function showFile(file) {
+    sheet.replaceChildren(el("p", "path", "agentbrain/" + file.path));
+    for (const raw of file.content.replace(/\n+$/, "").split("\n")) {
+      let row;
+      if (/^#\s/.test(raw)) row = el("div", "line h h1", raw.replace(/^#\s+/, ""));
+      else if (/^#{2,}\s/.test(raw)) row = el("div", "line h", raw.replace(/^#+\s+/, ""));
+      else if (/^>\s?/.test(raw)) { row = el("div", "line"); row.append(el("span", "line q", raw.replace(/^>\s?/, ""))); }
+      else if (raw.includes("（未記入）")) row = el("div", "line blank", raw);
+      else row = el("div", "line", raw);
+      sheet.append(row);
+    }
+    sheet.scrollTop = 0;
+    for (const b of list.querySelectorAll("button")) b.setAttribute("aria-current", String(b.dataset.path === file.path));
+  }
+
+  function showBox(index, wanted) {
+    const box = BOXES[index];
+    [...tabs.children].forEach((t, i) => t.setAttribute("aria-selected", String(i === index)));
+    about.textContent = box.about;
+    shelf.querySelector(".empty")?.remove();
+    const mine = inBox(box);
+    list.replaceChildren(
+      ...mine.map((f) => {
+        const li = el("li");
+        const b = el("button", "", box.dir ? f.path.slice(box.dir.length + 1) : f.path);
+        b.type = "button";
+        b.dataset.path = f.path;
+        b.addEventListener("click", () => showFile(f));
+        li.append(b);
+        return li;
+      }),
+    );
+    if (box.empty) shelf.append(el("p", "empty", box.empty));
+    const first = mine.find((f) => f.path === wanted) || mine[0];
+    if (first) showFile(first);
+    else sheet.replaceChildren(el("p", "note", box.empty || box.about));
+  }
+
+  BOXES.forEach((box, i) => {
+    const b = el("button");
+    b.type = "button";
+    b.setAttribute("role", "tab");
+    if (box.num) b.append(el("span", "num", box.num));
+    b.append(box.label);
+    b.addEventListener("click", () => showBox(i));
+    tabs.append(b);
+  });
+  showBox(START.box);
+
+  fetch("/api/template")
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+    .then((data) => { files = data.files; showBox(START.box, START.file); })
+    .catch(() => { sheet.replaceChildren(el("p", "note", "中身を読み込めませんでした。ページを開き直してください。フォルダの構成は、上の見出しから確かめられます。")); });
+
+  const copy = document.getElementById("copy-url");
+  copy.addEventListener("click", async () => {
+    const url = document.getElementById("mcp-url").textContent;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const range = document.createRange();
+      range.selectNodeContents(document.getElementById("mcp-url"));
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+      return;
+    }
+    copy.textContent = copy.dataset.done; copy.classList.add("done");
+    setTimeout(() => { copy.textContent = copy.dataset.idle; copy.classList.remove("done"); }, 1800);
+  });
+})();
+</script>
+</body>
+</html>
