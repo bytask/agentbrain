@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "agentbrain-mcp",
+  "account_id": "cf2700fea05294e9282d2323a28c0322",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-01",
+  // 公開面は mcp-gateway（mcp.taskf.co.jp/agentbrain/<secret>）のみ
+  "workers_dev": false,
+  // 以下は Secret として設定する（wrangler.jsonc には書かない）
+  //   npx wrangler secret put MCP_PATH_SECRET
+  "observability": { "enabled": true }
+}
