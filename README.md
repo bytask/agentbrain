@@ -1,6 +1,6 @@
 # agentbrain
 
-仕事の文脈を AI に渡すためのフォルダ「agentbrain」を作り、育てるためのプラグイン。
+仕事の文脈を AI に渡すためのフォルダ「agentbrain」を作り、育てるための手順と雛形。プラグインとしても、コネクタ（リモート MCP）としても入れられる。
 
 AI に仕事を頼むたびに背景を説明し直すのをやめ、自分の役割・業務のやり方・今の状況・過去の決定を 1 つのフォルダに貯めていく。AI はそのフォルダを読んで動く。
 
@@ -43,6 +43,23 @@ AI に仕事を頼むたびに背景を説明し直すのをやめ、自分の�
 /plugin install agentbrain@agentbrain
 ```
 
+### コネクタ（リモート MCP）
+
+プラグインを入れられない環境や、スキルを増やしたくないときに使う。中身はプラグインと同じ。
+
+1. 配られた URL（`https://mcp.taskf.co.jp/agentbrain/…`）を受け取る
+2. 設定 → コネクタ → カスタムコネクタを追加し、URL を貼る
+3. agentbrain を置きたいフォルダを作業フォルダに選び、「agentbrain を作って」と頼む
+
+Claude Code では `claude mcp add --transport http agentbrain <URL>`。
+
+コネクタは手順と雛形を返すだけで、ファイルは書かない。フォルダへの書き込みは手元の Claude が行うので、フォルダを選べる環境（デスクトップアプリの Cowork、Claude Code）で使う。
+
+| ツール | 返すもの |
+|---|---|
+| `agentbrain_guide` | 作る手順（`topic=setup`）、点検する手順（`topic=check`） |
+| `agentbrain_template` | 雛形の全ファイル、または指定した 1 ファイル |
+
 ## 使い続けるコツ
 
 - 思いついたことは `00-受け皿/メモ.md` に書くか、資料を `00-受け皿/取り込み/` に入れる。整理は AI に任せる
@@ -56,4 +73,4 @@ AI に仕事を頼むたびに背景を説明し直すのをやめ、自分の�
 python3 scripts/build.py
 ```
 
-`dist/agentbrain.plugin` ができる。
+`dist/agentbrain.plugin` ができる。コネクタ側は、main に入ると自動でデプロイされる。

@@ -1,0 +1,12 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: ["tskf/**"]
+jobs:
+  ci:
+    uses: bytask/tskf/.github/workflows/worker-ci.yml@main
+    with:
+      workdir: worker
+      # 生成物（SKILL.md の雛形の写し・worker/src/content.gen.ts）が正本と一致しているか
+      test: python3 ../scripts/build.py --check
