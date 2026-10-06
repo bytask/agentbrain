@@ -1,0 +1,10 @@
+{
+  "name": "agentbrain",
+  "version": "0.1.0",
+  "description": "仕事の文脈を AI に渡すためのフォルダ（agentbrain）を作り、インタビューで埋め、定期的に点検する",
+  "author": {
+    "name": "taskforce Inc."
+  },
+  "repository": "https://github.com/bytask/agentbrain",
+  "keywords": ["context", "knowledge-work", "template"]
+}

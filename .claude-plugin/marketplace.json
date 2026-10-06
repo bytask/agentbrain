@@ -1,0 +1,14 @@
+{
+  "name": "agentbrain",
+  "description": "agentbrain（仕事の文脈を AI に渡すフォルダ）の雛形とスキル",
+  "owner": {
+    "name": "taskforce Inc."
+  },
+  "plugins": [
+    {
+      "name": "agentbrain",
+      "source": "./",
+      "description": "仕事の文脈を AI に渡すためのフォルダ（agentbrain）を作り、インタビューで埋め、定期的に点検する"
+    }
+  ]
+}
