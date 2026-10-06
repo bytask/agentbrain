@@ -7,6 +7,8 @@
 
 紹介ページ `https://agentbrain.taskf.co.jp` も同じ Worker が出す（`worker/public/index.html`）。
 
+**公開 repo。** 秘密の値、社内の情報、利用者や顧客の名前を commit しない（履歴にも残る）。
+
 ## 構成
 
 | パス | 中身 |
@@ -55,6 +57,7 @@ claude -p --strict-mcp-config --mcp-config <MCP の URL を書いた json> --per
 ## 開発フロー（tskf `01-operations/playbooks/infra/dev-flow.md`）
 
 - **git 方針**: `pr` — `tskf/<項目 id>` ブランチ → PR → CI が緑なら自分で squash merge（`gh pr checks <PR> --watch --fail-fast && gh pr merge <PR> --squash --delete-branch`）
+- **CI / Deploy**: 公開 repo は tskf の再利用可能ワークフローを呼べないので、`.github/workflows/` に型を写した自己完結版を置いている
 - **デプロイ**: main への merge で GitHub Actions `Deploy` が `worker/` を出す。手で出す予備は `cd worker && npm run deploy`。プラグイン（`dist/`）は commit せず、配るときに `build.py` で作る
 - **本番デプロイは事前承認済み**（承認ゲートで止めるのは 外部送信・削除・課金・アプリの外部配信 だけ）
 - 公開面は独自ホスト `agentbrain.taskf.co.jp`（`wrangler.jsonc` の `routes`）。`mcp.taskf.co.jp/agentbrain/<secret>`（ゲートウェイ経由、`MCP_PATH_SECRET` で内部認証）は、公開前に配った URL のために残している
